@@ -56,15 +56,6 @@ foreach (dbFetchRows($sql) as $service) {
     if (!$service['service_disabled'] && ($service['status'] == 1 || ($service['status'] == 0 && $service['status_reason'] === 'snmp') ||
         $service['attrib_value'] === 'true' || ($service['service_ip'] !== $service['hostname'] &&
         $service['service_ip'] !== inet6_ntop($service['ip']) ))) {
-        // Mark service check as enabled if it was disabled previously because device was down
-        if ($service['service_disabled']) {
-            dbUpdate(
-                array('service_disabled' => 0),
-                'services',
-                '`service_id` = ?',
-                array($service['service_id'])
-            );
-        }
         $poll = new ServicePoll();
         $poll->servicePoll($service);
         $polled_services++;
@@ -72,13 +63,6 @@ foreach (dbFetchRows($sql) as $service) {
         if (!$service['service_disabled']) {
             d_echo("\nService check - ".$service['service_id']."\nSkipping service check because device "
                 .$service['hostname']." is down due to icmp.\n");
-            dbUpdate(
-                array('service_disabled' => 1),
-                'services',
-                '`service_id` = ?',
-                array($service['service_id'])
-            );
-
             Log::event(
                 "Service check - {$service['service_desc']} ({$service['service_id']}) - 
                 Skipping service check because device {$service['hostname']} is down due to icmp",

@@ -2292,15 +2292,16 @@ function add_service_for_host(\Illuminate\Http\Request $request)
     if (missing_fields(array('type'), $data)) {
         return api_error(400, 'Required fields missing (hostname and type needed)');
     }
-    if (!in_array($data['type'], list_available_services())) {
-        return api_error(400, "The service " . $data['type'] . " does not exist.\n Available service types: " . implode(', ', list_available_services()));
+    if (!in_array($data['type'], $serviceList = ServiceDB::listServices())) {
+        return api_error(400, "The service " . $data['type'] . " does not exist.\n Available service types: " . implode(', ', $serviceList()));
     }
     $service_type = $data['type'];
     $service_ip   = $data['ip'];
     $service_desc = $data['desc'] ? $data['desc'] : '';
     $service_param = $data['param'] ? $data['param'] : '';
     $service_ignore = $data['ignore'] ? true : false; // Default false
-    $service_id = add_service($device_id, $service_type, $service_desc, $service_ip, $service_param, (int)$service_ignore);
+    $service_disabled = $data['disabled'] ? true : false;
+    $service_id = ServiceDB::addService($device_id, $service_type, $service_desc, $service_ip, $service_param, (int)$service_ignore, (int)$service_disabled);
     if ($service_id != false) {
         return api_success_noresult(201, "Service $service_type has been added to device $hostname (#$service_id)");
     }
@@ -2379,9 +2380,6 @@ function edit_location(\Illuminate\Http\Request $request)
     $data = json_decode($request->getContent(), true);
     if (empty($location_id)) {
         return api_error(400, "Failed to delete location");
-    // Check if service type exists
-    if (!in_array($data['type'], $serviceList = ServiceDB::listServices())) {
-        api_error(400, "The service " . $data['type'] . " does not exist.\n Available service types: " . implode(', ', $serviceList));
     }
     $result = dbUpdate($data, 'locations', '`id` = ?', [$location_id]);
     if ($result == 1) {
@@ -2435,13 +2433,6 @@ function edit_service_for_host(\Illuminate\Http\Request $request)
     $data = json_decode($request->getContent(), true);
     if (edit_service($data, $service_id) == 1) {
         return api_success_noresult(201, "Service updated successfully");
-
-    // Set the service
-    $service_id = ServiceDB::addService($device_id, $service_type, $service_desc, $service_ip, $service_param, (int)$service_ignore, (int)$service_disabled);
-    if ($service_id != false) {
-        api_success_noresult(201, "Service $service_type has been added to device $hostname (#$service_id)");
-    } else {
-        api_error(500, 'Failed to add the service');
     }
     return api_error(500, "Failed to update the service with id $service_id");
 }
