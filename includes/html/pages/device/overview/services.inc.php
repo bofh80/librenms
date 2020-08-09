@@ -1,6 +1,7 @@
 <?php
 
 use LibreNMS\Util\ObjectCache;
+use LibreNMS\Service\ServiceDB;
 
 if (ObjectCache::serviceCounts(['total'], $device['device_id'])['total'] > 0) {
     $colors = collect(['green', 'yellow', 'red']);

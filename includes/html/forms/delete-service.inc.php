@@ -11,13 +11,15 @@
  * the source code distribution for details.
  */
 
+use LibreNMS\Service\ServiceDB;
+
 if (!Auth::user()->hasGlobalAdmin()) {
     $status = array('status' =>1, 'message' => 'ERROR: You need to be admin to delete services');
 } else {
     if (!is_numeric($vars['service_id'])) {
         $status = array('status' =>1, 'message' => 'No Service has been selected');
     } else {
-        if (delete_service($vars['service_id'])) {
+        if (ServiceDB::deleteService($vars['service_id'])) {
             $status = array('status' =>0, 'message' => 'Service: <i>'.$vars['service_id'].', has been deleted.</i>');
         } else {
             $status = array('status' =>1, 'message' => 'Service: <i>'.$vars['service_id'].', has NOT been deleted.</i>');

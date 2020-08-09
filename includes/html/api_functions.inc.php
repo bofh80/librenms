@@ -27,6 +27,7 @@ use LibreNMS\Data\Store\Datastore;
 use LibreNMS\Exceptions\InvalidIpException;
 use LibreNMS\Util\IP;
 use LibreNMS\Util\IPv4;
+use LibreNMS\Service\ServiceDB;
 
 function api_success($result, $result_name, $message = null, $code = 200, $count = null, $extra = null)
 {
@@ -2378,6 +2379,9 @@ function edit_location(\Illuminate\Http\Request $request)
     $data = json_decode($request->getContent(), true);
     if (empty($location_id)) {
         return api_error(400, "Failed to delete location");
+    // Check if service type exists
+    if (!in_array($data['type'], $serviceList = ServiceDB::listServices())) {
+        api_error(400, "The service " . $data['type'] . " does not exist.\n Available service types: " . implode(', ', $serviceList));
     }
     $result = dbUpdate($data, 'locations', '`id` = ?', [$location_id]);
     if ($result == 1) {
@@ -2431,6 +2435,13 @@ function edit_service_for_host(\Illuminate\Http\Request $request)
     $data = json_decode($request->getContent(), true);
     if (edit_service($data, $service_id) == 1) {
         return api_success_noresult(201, "Service updated successfully");
+
+    // Set the service
+    $service_id = ServiceDB::addService($device_id, $service_type, $service_desc, $service_ip, $service_param, (int)$service_ignore, (int)$service_disabled);
+    if ($service_id != false) {
+        api_success_noresult(201, "Service $service_type has been added to device $hostname (#$service_id)");
+    } else {
+        api_error(500, 'Failed to add the service');
     }
     return api_error(500, "Failed to update the service with id $service_id");
 }

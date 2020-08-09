@@ -1,5 +1,7 @@
 <?php
 
+use LibreNMS\Service\ServiceDB;
+
 $no_refresh = true;
 
 if (!Auth::user()->hasGlobalAdmin()) {
@@ -9,14 +11,14 @@ if (!Auth::user()->hasGlobalAdmin()) {
         if (Auth::user()->hasGlobalAdmin()) {
             $updated = '1';
 
-            $service_id = add_service($vars['device'], $vars['type'], $vars['descr'], $vars['ip'], $vars['params'], 0);
+            $service_id = ServiceDB::addService($vars['device'], $vars['type'], $vars['descr'], $vars['ip'], $vars['params'], 0);
             if ($service_id) {
                 $message       .= $message_break.'Service added ('.$service_id.')!';
                 $message_break .= '<br />';
             }
         }
     }
-    foreach (list_available_services() as $current_service) {
+    foreach (ServiceDB::listServices() as $current_service) {
         $servicesform .= "<option value='$current_service'>$current_service</option>";
     }
 
